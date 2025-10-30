@@ -12,9 +12,9 @@ export default class PlatformEntity extends Entity {
   private _number: 6 | 7;
 
   constructor(number: 6 | 7) {
-    // Use a simple colored texture name based on the number
-    // Hytopia will use default textures if these don't exist
-    const textureUri = number === 6 ? 'blocks/stone' : 'blocks/wood';
+    // Use existing textures from the assets folder
+    // Platform 6 = Blue concrete, Platform 7 = Brown concrete (different colors)
+    const textureUri = number === 6 ? 'blocks/blue-concrete' : 'blocks/brown-concrete';
 
     super({
       name: `Platform ${number}`,

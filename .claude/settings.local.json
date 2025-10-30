@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__hytopia-mcp__listDocumentation",
+      "mcp__hytopia-mcp__listProjects",
+      "mcp__hytopia-mcp__getDocumentation",
+      "mcp__hytopia-mcp__listProjectFiles",
+      "mcp__hytopia-mcp__readProjectFile",
+      "Bash(if exist .hytopia rmdir /s /q .hytopia)",
+      "Bash(if exist index.mjs del index.mjs)",
+      "Bash(powershell -Command:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "hytopia-mcp"
+  ]
+}

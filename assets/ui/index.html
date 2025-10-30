@@ -1,0 +1,564 @@
+<!--
+  6-7 MEME BATTLEGROUND - Game UI
+  React to the beat! Jump to platforms 6 or 7 on the beat to survive!
+-->
+
+<!-- FONTS -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+<!-- GAME HUD -->
+<div class="game-hud">
+  <!-- Top Center: Round Info & Timer -->
+  <div class="round-info">
+    <div class="round-text">ROUND <span class="round-number">1</span>/<span class="round-total">6</span></div>
+    <div class="game-state-text">Waiting for players...</div>
+  </div>
+
+  <!-- Top Right: Leaderboard -->
+  <div class="leaderboard">
+    <div class="leaderboard-title">LEADERBOARD</div>
+    <div class="leaderboard-players"></div>
+  </div>
+
+  <!-- Center: Countdown Overlay -->
+  <div class="countdown-overlay">
+    <div class="countdown-number">3</div>
+  </div>
+
+  <!-- Center: Score Popup -->
+  <div class="score-popup"></div>
+
+  <!-- Bottom Center: Instructions -->
+  <div class="instructions">
+    <div class="instruction-text">Press <span class="key">6</span> or <span class="key">7</span> on the beat!</div>
+  </div>
+</div>
+
+<!-- MOBILE CONTROLS -->
+<div class="mobile-controls">
+  <button id="mobile-6-button" class="mobile-platform-btn">6</button>
+  <button id="mobile-7-button" class="mobile-platform-btn">7</button>
+</div>
+
+<!-- UI SCRIPT -->
+<script>
+  // ========================================================================
+  // 6-7 BATTLEGROUND - CLIENT UI LOGIC
+  // ========================================================================
+
+  let gameState = 'WAITING';
+  let currentRound = 1;
+  let totalRounds = 6;
+
+  // ========================================================================
+  // MOBILE INPUT HANDLERS
+  // ========================================================================
+
+  const mobile6Button = document.getElementById('mobile-6-button');
+  const mobile7Button = document.getElementById('mobile-7-button');
+
+  mobile6Button.addEventListener('touchstart', e => {
+    e.preventDefault();
+    mobile6Button.classList.add('active');
+    hytopia.pressInput('6', true);
+  });
+
+  mobile6Button.addEventListener('touchend', e => {
+    e.preventDefault();
+    mobile6Button.classList.remove('active');
+    hytopia.pressInput('6', false);
+  });
+
+  mobile7Button.addEventListener('touchstart', e => {
+    e.preventDefault();
+    mobile7Button.classList.add('active');
+    hytopia.pressInput('7', true);
+  });
+
+  mobile7Button.addEventListener('touchend', e => {
+    e.preventDefault();
+    mobile7Button.classList.remove('active');
+    hytopia.pressInput('7', false);
+  });
+
+  // ========================================================================
+  // SERVER DATA HANDLER
+  // ========================================================================
+
+  hytopia.onData(data => {
+    const { type } = data;
+
+    if (!type) return;
+
+    switch (type) {
+      case 'waiting-for-players':
+        handleWaitingForPlayers(data);
+        break;
+
+      case 'round-start':
+        handleRoundStart(data);
+        break;
+
+      case 'countdown':
+        handleCountdown(data);
+        break;
+
+      case 'score':
+        handleScore(data);
+        break;
+
+      case 'leaderboard':
+        handleLeaderboard(data);
+        break;
+
+      case 'eliminated':
+        handleEliminated(data);
+        break;
+
+      case 'match-end':
+        handleMatchEnd(data);
+        break;
+
+      case 'level-up':
+        handleLevelUp(data);
+        break;
+
+      case 'game-state':
+        handleGameState(data);
+        break;
+    }
+  });
+
+  // ========================================================================
+  // UI UPDATE FUNCTIONS
+  // ========================================================================
+
+  function handleWaitingForPlayers(data) {
+    gameState = 'WAITING';
+    const stateText = document.querySelector('.game-state-text');
+    stateText.textContent = `Waiting for players... (${data.current}/${data.needed})`;
+    stateText.style.display = 'block';
+  }
+
+  function handleRoundStart(data) {
+    gameState = 'ROUND_START';
+    currentRound = data.round;
+    totalRounds = data.totalRounds;
+
+    document.querySelector('.round-number').textContent = currentRound;
+    document.querySelector('.round-total').textContent = totalRounds;
+
+    const stateText = document.querySelector('.game-state-text');
+    stateText.textContent = `Round ${currentRound} starting...`;
+    stateText.style.display = 'block';
+  }
+
+  function handleCountdown(data) {
+    const countdown = data.seconds;
+    const countdownOverlay = document.querySelector('.countdown-overlay');
+    const countdownNumber = document.querySelector('.countdown-number');
+
+    if (countdown > 0) {
+      countdownNumber.textContent = countdown;
+      countdownOverlay.classList.add('show');
+    } else {
+      countdownNumber.textContent = 'GO!';
+      setTimeout(() => {
+        countdownOverlay.classList.remove('show');
+        document.querySelector('.game-state-text').style.display = 'none';
+      }, 500);
+    }
+  }
+
+  function handleScore(data) {
+    showScorePopup(data.rating, data.score, data.timingDelta);
+
+    // Update total score in leaderboard (will be refreshed by server)
+  }
+
+  function handleLeaderboard(data) {
+    const playersContainer = document.querySelector('.leaderboard-players');
+    playersContainer.innerHTML = '';
+
+    data.players.forEach((player, index) => {
+      const playerDiv = document.createElement('div');
+      playerDiv.className = `leaderboard-player ${!player.alive ? 'eliminated' : ''}`;
+
+      playerDiv.innerHTML = `
+        <span class="player-rank">${index + 1}</span>
+        <span class="player-name">${player.username}</span>
+        <span class="player-score">${player.score}</span>
+      `;
+
+      playersContainer.appendChild(playerDiv);
+    });
+  }
+
+  function handleEliminated(data) {
+    const stateText = document.querySelector('.game-state-text');
+    stateText.textContent = `ELIMINATED! Final Score: ${data.finalScore}`;
+    stateText.style.display = 'block';
+    stateText.style.color = '#FF0000';
+  }
+
+  function handleMatchEnd(data) {
+    const stateText = document.querySelector('.game-state-text');
+    stateText.innerHTML = `
+      <div style="font-size: 24px; margin-bottom: 10px;">🏆 WINNER 🏆</div>
+      <div>${data.winner}</div>
+      <div style="font-size: 18px; margin-top: 5px;">Score: ${data.winnerScore}</div>
+    `;
+    stateText.style.display = 'block';
+    stateText.style.color = '#FFD700';
+  }
+
+  function handleLevelUp(data) {
+    const stateText = document.querySelector('.game-state-text');
+    stateText.innerHTML = `
+      <div style="font-size: 32px;">⭐ LEVEL UP! ⭐</div>
+      <div style="font-size: 24px; margin-top: 10px;">Level ${data.level}</div>
+    `;
+    stateText.style.display = 'block';
+    stateText.style.color = '#00FF00';
+
+    setTimeout(() => {
+      stateText.style.display = 'none';
+    }, 3000);
+  }
+
+  function handleGameState(data) {
+    gameState = data.state;
+    currentRound = data.round;
+    totalRounds = data.totalRounds;
+
+    document.querySelector('.round-number').textContent = currentRound || 1;
+    document.querySelector('.round-total').textContent = totalRounds;
+  }
+
+  function showScorePopup(rating, score, timingDelta) {
+    const popup = document.querySelector('.score-popup');
+
+    let color = '#FFFFFF';
+    let text = rating;
+
+    if (rating === 'PERFECT') color = '#00FF00';
+    else if (rating === 'GOOD') color = '#FFFF00';
+    else if (rating === 'LATE') color = '#FFA500';
+    else if (rating === 'MISS' || rating === 'WRONG_PLATFORM') color = '#FF0000';
+
+    popup.innerHTML = `
+      <div class="score-rating" style="color: ${color}">${text}</div>
+      <div class="score-points">+${score}</div>
+    `;
+
+    popup.classList.add('show');
+
+    setTimeout(() => {
+      popup.classList.remove('show');
+    }, 2000);
+  }
+</script>
+
+<!-- UI STYLES -->
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  .game-hud {
+    font-family: 'Inter', sans-serif;
+    color: #FFFFFF;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+    pointer-events: none;
+  }
+
+  /* ===================================================================== */
+  /* TOP CENTER: ROUND INFO */
+  /* ===================================================================== */
+
+  .round-info {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+  }
+
+  .round-text {
+    font-size: 24px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    margin-bottom: 5px;
+  }
+
+  .game-state-text {
+    font-size: 16px;
+    font-weight: 600;
+    color: #FFD700;
+    display: none;
+  }
+
+  /* ===================================================================== */
+  /* TOP RIGHT: LEADERBOARD */
+  /* ===================================================================== */
+
+  .leaderboard {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 8px;
+    padding: 15px;
+    min-width: 220px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  }
+
+  .leaderboard-title {
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    text-align: center;
+    color: #FFD700;
+  }
+
+  .leaderboard-players {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .leaderboard-player {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    font-size: 13px;
+  }
+
+  .leaderboard-player.eliminated {
+    opacity: 0.5;
+    text-decoration: line-through;
+  }
+
+  .player-rank {
+    font-weight: 900;
+    color: #FFD700;
+    margin-right: 8px;
+  }
+
+  .player-name {
+    flex: 1;
+    font-weight: 600;
+  }
+
+  .player-score {
+    font-weight: 700;
+    color: #00FF00;
+  }
+
+  /* ===================================================================== */
+  /* CENTER: COUNTDOWN OVERLAY */
+  /* ===================================================================== */
+
+  .countdown-overlay {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  .countdown-overlay.show {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    animation: countdownPulse 1s ease-out;
+  }
+
+  .countdown-number {
+    font-size: 120px;
+    font-weight: 900;
+    color: #FFD700;
+    text-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+  }
+
+  @keyframes countdownPulse {
+    0% {
+      transform: translate(-50%, -50%) scale(0.5);
+      opacity: 0;
+    }
+    50% {
+      transform: translate(-50%, -50%) scale(1.2);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+  }
+
+  /* ===================================================================== */
+  /* CENTER: SCORE POPUP */
+  /* ===================================================================== */
+
+  .score-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+    z-index: 999;
+    text-align: center;
+  }
+
+  .score-popup.show {
+    opacity: 1;
+    animation: scorePopupAnim 2s ease-out;
+  }
+
+  .score-rating {
+    font-size: 48px;
+    font-weight: 900;
+    margin-bottom: 10px;
+    text-shadow: 0 0 20px currentColor;
+  }
+
+  .score-points {
+    font-size: 36px;
+    font-weight: 700;
+    color: #FFFFFF;
+  }
+
+  @keyframes scorePopupAnim {
+    0% {
+      transform: translate(-50%, -50%) scale(0.5);
+      opacity: 0;
+    }
+    20% {
+      transform: translate(-50%, -50%) scale(1.2);
+      opacity: 1;
+    }
+    80% {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(-50%, -60%) scale(0.8);
+      opacity: 0;
+    }
+  }
+
+  /* ===================================================================== */
+  /* BOTTOM CENTER: INSTRUCTIONS */
+  /* ===================================================================== */
+
+  .instructions {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .instruction-text .key {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    font-weight: 900;
+    margin: 0 4px;
+  }
+
+  /* ===================================================================== */
+  /* MOBILE CONTROLS */
+  /* ===================================================================== */
+
+  .mobile-controls {
+    display: none;
+    pointer-events: auto;
+  }
+
+  body.mobile .mobile-controls {
+    display: flex;
+    gap: 40px;
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .mobile-platform-btn {
+    width: 100px;
+    height: 100px;
+    font-size: 60px;
+    font-weight: 900;
+    border: 4px solid #FFFFFF;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.7);
+    color: #FFFFFF;
+    cursor: pointer;
+    transition: all 0.1s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    font-family: 'Inter', sans-serif;
+  }
+
+  .mobile-platform-btn:active,
+  .mobile-platform-btn.active {
+    transform: scale(0.9);
+    background: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+  }
+
+  /* ===================================================================== */
+  /* RESPONSIVE ADJUSTMENTS */
+  /* ===================================================================== */
+
+  @media (max-width: 768px) {
+    .leaderboard {
+      top: 10px;
+      right: 10px;
+      min-width: 180px;
+      padding: 10px;
+    }
+
+    .leaderboard-title {
+      font-size: 12px;
+    }
+
+    .leaderboard-player {
+      font-size: 11px;
+      padding: 4px 6px;
+    }
+
+    .round-info {
+      top: 10px;
+    }
+
+    .round-text {
+      font-size: 18px;
+    }
+
+    .game-state-text {
+      font-size: 14px;
+    }
+
+    .instructions {
+      display: none; /* Hide on mobile, use touch buttons instead */
+    }
+  }
+</style>

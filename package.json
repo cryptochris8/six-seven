@@ -1,0 +1,27 @@
+{
+  "name": "six-seven-battleground",
+  "version": "1.0.0",
+  "description": "A viral meme party royale built on Hytopia - React to the 6-7 audio!",
+  "main": "index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "hytopia start",
+    "start": "clear-and-start.bat",
+    "prod": "NODE_ENV=production hytopia start",
+    "clean": "powershell -ExecutionPolicy Bypass -File ./clear-cache.ps1"
+  },
+  "keywords": [
+    "hytopia",
+    "game",
+    "meme",
+    "6-7",
+    "party",
+    "battle-royale"
+  ],
+  "author": "Chris Campbell",
+  "license": "MIT",
+  "dependencies": {
+    "@hytopia.com/assets": "^0.4.0",
+    "hytopia": "^0.10.37"
+  }
+}

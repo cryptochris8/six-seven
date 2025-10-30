@@ -1,0 +1,46 @@
+⚠️ IMPORTANT: MISSING AUDIO FILE ⚠️
+
+You need to add the "6-7" audio track for the game to work!
+
+Required File:
+  📁 six_seven_v1.mp3
+
+Where to place it:
+  📂 assets/audio/six_seven_v1.mp3
+
+File Requirements:
+  - Duration: ~30 seconds
+  - Format: MP3
+  - Sample Rate: 44.1kHz or higher
+  - Quality: 128kbps or higher
+
+How to Get the Audio:
+  1. Download a royalty-free remix of "6-7" audio
+  2. OR create your own remix
+  3. OR use a placeholder track for testing
+
+IMPORTANT - Audio Licensing:
+  ⚠️ The original "6-7" TikTok audio is COPYRIGHTED!
+
+  If publishing this game, you MUST:
+  - Use a royalty-free remix
+  - Get permission from the original creator
+  - Partner with the TikTok creator for revenue share
+
+Beat Timing:
+  The current beat timing data is configured for:
+  - BPM: 120
+  - Duration: 30 seconds
+  - 60 beats total
+
+  If your audio file has a different BPM or structure, you'll need to:
+  1. Open your audio in Audacity
+  2. Find the exact beat times (in milliseconds)
+  3. Update: assets/audio/beat_timings/six_seven_v1.json
+
+Testing Without Audio:
+  You can test the game mechanics using ANY 30-second MP3 file!
+  Just name it "six_seven_v1.mp3" and place it here.
+
+Need Help?
+  Check the README.md for detailed instructions!

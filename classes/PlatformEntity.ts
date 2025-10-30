@@ -12,9 +12,9 @@ export default class PlatformEntity extends Entity {
   private _number: 6 | 7;
 
   constructor(number: 6 | 7) {
-    // Use existing textures from the assets folder
-    // Platform 6 = Blue concrete, Platform 7 = Brown concrete (different colors)
-    const textureUri = number === 6 ? 'blocks/blue-concrete' : 'blocks/brown-concrete';
+    // Use existing block textures with full face texture sets
+    // Platform 6 = Grass block (green), Platform 7 = Sandstone (tan/beige)
+    const textureUri = number === 6 ? 'blocks/grass-block' : 'blocks/sandstone';
 
     super({
       name: `Platform ${number}`,

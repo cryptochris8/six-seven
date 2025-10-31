@@ -41,17 +41,16 @@ export default class PlatformEntity extends Entity {
 
   /**
    * Make the platform glow (visual feedback when it's the correct answer)
-   * TODO: Implement particle effects or emissive material
+   * Note: This is now handled via UI indicators instead of changing the entity texture
    */
   public glow(): void {
-    // Future: Add particle effects or change material to glowing
-    // For now, this is a placeholder
+    // Placeholder - visual feedback is now handled by UI
   }
 
   /**
    * Stop glowing
    */
   public stopGlow(): void {
-    // Future: Remove particle effects or restore normal material
+    // Placeholder - visual feedback is now handled by UI
   }
 }

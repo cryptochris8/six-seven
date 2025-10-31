@@ -7,13 +7,12 @@
  * - Elimination state management
  */
 
-import { DefaultPlayerEntity, type Player } from 'hytopia';
+import { DefaultPlayerEntity, type Player, PlayerUIEvent } from 'hytopia';
 import type { PlayerProfile } from '../gameConfig.js';
 import { DEFAULT_PLAYER_PROFILE } from '../gameConfig.js';
+import { GameManager } from './GameManager.js';
 
 export default class GamePlayerEntity extends DefaultPlayerEntity {
-  private _last6Press = false;
-  private _last7Press = false;
   private _isEliminated = false;
   private _currentScore = 0;
   private _profile: PlayerProfile;
@@ -27,39 +26,37 @@ export default class GamePlayerEntity extends DefaultPlayerEntity {
 
     // Initialize with default profile (will be loaded from persisted data)
     this._profile = { ...DEFAULT_PLAYER_PROFILE };
+
+    // Register UI event listener after entity is fully initialized
+    setImmediate(() => {
+      this._setupUIListeners();
+    });
   }
 
   /**
-   * Called every tick to handle player input
+   * Set up UI event listeners for platform jumps
    */
-  public onTick(): void {
-    super.onTick(); // Call parent tick for movement
+  private _setupUIListeners(): void {
+    // Listen for platform jump events from the UI
+    this.player.ui.on(PlayerUIEvent.DATA, (eventData: any) => {
+      // Event data structure: { playerUI: {...}, data: { type, platform, timestamp } }
+      const data = eventData.data;
 
+      if (data && data.type === 'platform-jump') {
+        this._handlePlatformJump(data.platform, data.timestamp);
+      }
+    });
+  }
+
+  /**
+   * Handle platform jump input from UI
+   */
+  private _handlePlatformJump(platform: 6 | 7, timestamp: number): void {
     // Don't process inputs if eliminated
     if (this._isEliminated) return;
 
-    const input = this.player.input;
-
-    // Detect key presses (not holds) for platform 6
-    if (input['6'] && !this._last6Press) {
-      this._handlePlatformJump(6);
-    }
-    this._last6Press = input['6'] || false;
-
-    // Detect key presses (not holds) for platform 7
-    if (input['7'] && !this._last7Press) {
-      this._handlePlatformJump(7);
-    }
-    this._last7Press = input['7'] || false;
-  }
-
-  /**
-   * Handle platform jump input
-   */
-  private _handlePlatformJump(platform: 6 | 7): void {
-    // Import dynamically to avoid circular dependency
-    const { GameManager } = require('./GameManager.js');
-    GameManager.instance.handleJump(this.player, platform, Date.now());
+    // Use GameManager singleton instance
+    GameManager.instance.handleJump(this.player, platform, timestamp);
   }
 
   /**

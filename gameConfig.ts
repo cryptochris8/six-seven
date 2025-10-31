@@ -71,17 +71,49 @@ export interface AudioTrack {
 
 export const AUDIO_TRACKS: AudioTrack[] = [
   {
-    id: 'six_seven_v1',
+    id: 'six_seven_original',
     name: '6-7 Original',
-    uri: 'audio/six_seven_v1.mp3',
-    beatTimingsUri: 'audio/beat_timings/six_seven_v1.json',
-    durationMs: 30000 // 30 seconds
+    uri: 'audio/six_seven_original.mp3',
+    beatTimingsUri: 'audio/beat_timings/six_seven_original.json',
+    durationMs: 30000
+  },
+  {
+    id: 'six_seven_hype',
+    name: '6-7 Hype Beast',
+    uri: 'audio/six_seven_hype.mp3',
+    beatTimingsUri: 'audio/beat_timings/six_seven_hype.json',
+    durationMs: 30000
+  },
+  {
+    id: 'six_seven_chill',
+    name: '6-7 Chill Vibes',
+    uri: 'audio/six_seven_chill.mp3',
+    beatTimingsUri: 'audio/beat_timings/six_seven_chill.json',
+    durationMs: 30000
+  },
+  {
+    id: 'six_seven_deep',
+    name: '6-7 Deep Voice',
+    uri: 'audio/six_seven_deep.mp3',
+    beatTimingsUri: 'audio/beat_timings/six_seven_deep.json',
+    durationMs: 30000
+  },
+  {
+    id: 'six_seven_chipmunk',
+    name: '6-7 Chipmunk',
+    uri: 'audio/six_seven_chipmunk.mp3',
+    beatTimingsUri: 'audio/beat_timings/six_seven_chipmunk.json',
+    durationMs: 30000
   }
-  // Add more tracks here as you create them
+  // Add more tracks easily - just follow the pattern above!
 ];
 
-// Default track for MVP
-export const DEFAULT_TRACK_ID = 'six_seven_v1';
+// Default track for fallback
+export const DEFAULT_TRACK_ID = 'six_seven_original';
+
+// Track selection mode
+export type TrackSelectionMode = 'random' | 'sequential' | 'vote';
+export const TRACK_SELECTION_MODE: TrackSelectionMode = 'random';
 
 // =============================================================================
 // UI COLORS

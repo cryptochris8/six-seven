@@ -31,6 +31,9 @@ import {
   PLAYER_SPAWN_POSITION,
   SPECTATOR_POSITION,
   DEFAULT_TRACK_ID,
+  AUDIO_TRACKS,
+  TRACK_SELECTION_MODE,
+  type AudioTrack,
   XP_MATCH_COMPLETE,
   XP_PERFECT_HIT,
   XP_GOOD_HIT,
@@ -41,8 +44,9 @@ import {
   DEFAULT_PLAYER_PROFILE
 } from '../gameConfig.js';
 
-// Import beat timing data
-import beatTimingsData from '../assets/audio/beat_timings/six_seven_v1.json';
+// Dynamic beat timing data import
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 type GameState = 'WAITING' | 'COUNTDOWN' | 'PLAYING' | 'ROUND_END' | 'MATCH_END';
 
@@ -67,6 +71,7 @@ export class GameManager {
   private _roundTimer?: NodeJS.Timeout;
   private _countdownTimer?: NodeJS.Timeout;
   private _waitTimer?: NodeJS.Timeout;
+  private _platformGlowTimers: NodeJS.Timeout[] = [];
 
   // Input rate limiting (anti-cheat)
   private _lastInputTime = new Map<string, number>();
@@ -80,9 +85,6 @@ export class GameManager {
 
     console.log('[6-7 BATTLEGROUND] Setting up game...');
 
-    // Initialize beat manager
-    this._beatManager = new BeatManager(beatTimingsData as BeatTimingData);
-
     // Spawn platforms
     this._spawnPlatforms();
 
@@ -90,6 +92,7 @@ export class GameManager {
     this._waitForPlayers();
 
     console.log('[6-7 BATTLEGROUND] Game setup complete! Waiting for players...');
+    console.log(`[6-7 BATTLEGROUND] ${AUDIO_TRACKS.length} audio tracks available!`);
   }
 
   /**
@@ -269,7 +272,7 @@ export class GameManager {
    * Start a new round
    */
   private _startRound(): void {
-    if (!this.world || !this._beatManager) return;
+    if (!this.world) return;
 
     this._currentRound++;
     this._gameState = 'COUNTDOWN';
@@ -314,31 +317,146 @@ export class GameManager {
   }
 
   /**
+   * Select an audio track based on configured selection mode
+   */
+  private _selectTrack(): AudioTrack {
+    if (AUDIO_TRACKS.length === 0) {
+      throw new Error('No audio tracks configured!');
+    }
+
+    if (TRACK_SELECTION_MODE === 'random') {
+      // Random selection
+      const randomIndex = Math.floor(Math.random() * AUDIO_TRACKS.length);
+      return AUDIO_TRACKS[randomIndex];
+    } else if (TRACK_SELECTION_MODE === 'sequential') {
+      // Sequential selection (round-robin)
+      const trackIndex = this._currentRound % AUDIO_TRACKS.length;
+      return AUDIO_TRACKS[trackIndex];
+    }
+
+    // Default: return first track
+    return AUDIO_TRACKS[0];
+  }
+
+  /**
+   * Load beat timing data from JSON file
+   */
+  private _loadBeatTimingData(beatTimingsUri: string): BeatTimingData {
+    try {
+      const filePath = join(process.cwd(), 'assets', beatTimingsUri);
+      const fileContent = readFileSync(filePath, 'utf-8');
+      return JSON.parse(fileContent) as BeatTimingData;
+    } catch (error) {
+      console.error(`[6-7 BATTLEGROUND] Failed to load beat timing data from ${beatTimingsUri}:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Play the actual round (audio starts, players react)
    */
   private _playRound(): void {
-    if (!this.world || !this._beatManager) return;
+    if (!this.world) return;
 
     this._gameState = 'PLAYING';
+
+    // Select and load audio track for this round
+    const selectedTrack = this._selectTrack();
+    console.log(`[6-7 BATTLEGROUND] Selected track: ${selectedTrack.name}`);
+
+    // Load beat timing data for the selected track
+    const beatTimingData = this._loadBeatTimingData(selectedTrack.beatTimingsUri);
+
+    // Initialize beat manager with the selected track's timing data
+    this._beatManager = new BeatManager(beatTimingData);
 
     const roundStartTime = Date.now();
     this._beatManager.startRound(roundStartTime);
 
-    // Play the audio track
+    // Play the selected audio track
     this._roundAudio = new Audio({
-      uri: 'audio/six_seven_v1.mp3', // You'll need to add this audio file
+      uri: selectedTrack.uri,
       loop: false,
       volume: 0.8
     });
 
     this._roundAudio.play(this.world);
 
+    // Announce track to players
+    this._broadcastToAll({
+      type: 'track-selected',
+      trackName: selectedTrack.name
+    });
+
     console.log('[6-7 BATTLEGROUND] Round playing! Audio started.');
 
-    // End round after track duration (30 seconds)
+    // Schedule platform highlight effects
+    this._schedulePlatformGlows();
+
+    // End round after track duration
     this._roundTimer = setTimeout(() => {
       this._endRound();
-    }, 30000);
+    }, selectedTrack.durationMs);
+  }
+
+  /**
+   * Schedule platform highlight UI indicators based on beat timing
+   */
+  private _schedulePlatformGlows(): void {
+    if (!this._beatManager) return;
+
+    // Clear any existing timers
+    this._clearPlatformGlowTimers();
+
+    const beatTimes = this._beatManager.getBeatTimes();
+    const markers = this._beatManager.getMarkers();
+
+    // Schedule UI highlights for each beat
+    beatTimes.forEach((beatTime, index) => {
+      const marker = markers[index];
+      const platformNumber = marker === 'six' ? 6 : 7;
+
+      // Show highlight 300ms before the beat
+      const highlightStartDelay = Math.max(0, beatTime - 300);
+      const highlightTimer = setTimeout(() => {
+        this._broadcastToAll({
+          type: 'platform-highlight',
+          platform: platformNumber,
+          active: true
+        });
+      }, highlightStartDelay);
+
+      this._platformGlowTimers.push(highlightTimer);
+
+      // Hide highlight 500ms after the beat
+      const highlightStopDelay = beatTime + 500;
+      const stopTimer = setTimeout(() => {
+        this._broadcastToAll({
+          type: 'platform-highlight',
+          platform: platformNumber,
+          active: false
+        });
+      }, highlightStopDelay);
+
+      this._platformGlowTimers.push(stopTimer);
+    });
+
+    console.log(`[6-7 BATTLEGROUND] Scheduled ${beatTimes.length} platform UI highlights`);
+  }
+
+  /**
+   * Clear all platform glow timers
+   */
+  private _clearPlatformGlowTimers(): void {
+    this._platformGlowTimers.forEach(timer => clearTimeout(timer));
+    this._platformGlowTimers = [];
+
+    // Clear UI highlights
+    this._broadcastToAll({
+      type: 'platform-highlight',
+      platform: 0,
+      active: false
+    });
   }
 
   /**
@@ -348,6 +466,9 @@ export class GameManager {
     if (!this.world) return;
 
     this._gameState = 'ROUND_END';
+
+    // Stop platform glows
+    this._clearPlatformGlowTimers();
 
     console.log(`[6-7 BATTLEGROUND] Round ${this._currentRound} ended`);
 

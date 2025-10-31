@@ -34,6 +34,14 @@
   <div class="instructions">
     <div class="instruction-text">Press <span class="key">6</span> or <span class="key">7</span> on the beat!</div>
   </div>
+
+  <!-- Platform Indicators (Left and Right) -->
+  <div class="platform-indicator platform-6-indicator">
+    <div class="platform-number">6</div>
+  </div>
+  <div class="platform-indicator platform-7-indicator">
+    <div class="platform-number">7</div>
+  </div>
 </div>
 
 <!-- MOBILE CONTROLS -->
@@ -53,7 +61,39 @@
   let totalRounds = 6;
 
   // ========================================================================
-  // MOBILE INPUT HANDLERS
+  // KEYBOARD INPUT HANDLERS (Desktop)
+  // ========================================================================
+
+  // Track which keys are currently pressed to prevent spam
+  let key6Pressed = false;
+  let key7Pressed = false;
+
+  // Listen for keyboard input
+  document.addEventListener('keydown', e => {
+    // Platform 6 key
+    if (e.key === '6' && !key6Pressed) {
+      key6Pressed = true;
+      handlePlatformPress(6);
+    }
+
+    // Platform 7 key
+    if (e.key === '7' && !key7Pressed) {
+      key7Pressed = true;
+      handlePlatformPress(7);
+    }
+  });
+
+  document.addEventListener('keyup', e => {
+    if (e.key === '6') {
+      key6Pressed = false;
+    }
+    if (e.key === '7') {
+      key7Pressed = false;
+    }
+  });
+
+  // ========================================================================
+  // MOBILE INPUT HANDLERS (Touch)
   // ========================================================================
 
   const mobile6Button = document.getElementById('mobile-6-button');
@@ -62,26 +102,39 @@
   mobile6Button.addEventListener('touchstart', e => {
     e.preventDefault();
     mobile6Button.classList.add('active');
-    hytopia.pressInput('6', true);
+    handlePlatformPress(6);
   });
 
   mobile6Button.addEventListener('touchend', e => {
     e.preventDefault();
     mobile6Button.classList.remove('active');
-    hytopia.pressInput('6', false);
   });
 
   mobile7Button.addEventListener('touchstart', e => {
     e.preventDefault();
     mobile7Button.classList.add('active');
-    hytopia.pressInput('7', true);
+    handlePlatformPress(7);
   });
 
   mobile7Button.addEventListener('touchend', e => {
     e.preventDefault();
     mobile7Button.classList.remove('active');
-    hytopia.pressInput('7', false);
   });
+
+  // ========================================================================
+  // PLATFORM PRESS HANDLER
+  // ========================================================================
+
+  function handlePlatformPress(platform) {
+    // Send jump event to server with client timestamp
+    hytopia.sendData({
+      type: 'platform-jump',
+      platform: platform,
+      timestamp: Date.now()
+    });
+
+    console.log(`Pressed platform ${platform}`);
+  }
 
   // ========================================================================
   // SERVER DATA HANDLER
@@ -127,6 +180,10 @@
 
       case 'game-state':
         handleGameState(data);
+        break;
+
+      case 'platform-highlight':
+        handlePlatformHighlight(data);
         break;
     }
   });
@@ -206,12 +263,40 @@
   function handleMatchEnd(data) {
     const stateText = document.querySelector('.game-state-text');
     stateText.innerHTML = `
-      <div style="font-size: 24px; margin-bottom: 10px;">🏆 WINNER 🏆</div>
-      <div>${data.winner}</div>
-      <div style="font-size: 18px; margin-top: 5px;">Score: ${data.winnerScore}</div>
+      <div style="font-size: 32px; margin-bottom: 15px; animation: victoryPulse 1s ease-in-out infinite;">🏆 WINNER 🏆</div>
+      <div style="font-size: 28px; font-weight: 900; margin-bottom: 10px;">${data.winner}</div>
+      <div style="font-size: 20px; margin-top: 5px;">Final Score: ${data.winnerScore}</div>
     `;
     stateText.style.display = 'block';
     stateText.style.color = '#FFD700';
+
+    // Trigger confetti celebration!
+    createConfetti();
+  }
+
+  // Create confetti particle effect
+  function createConfetti() {
+    const confettiContainer = document.createElement('div');
+    confettiContainer.className = 'confetti-container';
+    document.body.appendChild(confettiContainer);
+
+    // Create 50 confetti pieces
+    const colors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE'];
+
+    for (let i = 0; i < 50; i++) {
+      const confetti = document.createElement('div');
+      confetti.className = 'confetti';
+      confetti.style.left = Math.random() * 100 + '%';
+      confetti.style.animationDelay = Math.random() * 3 + 's';
+      confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+      confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
+      confettiContainer.appendChild(confetti);
+    }
+
+    // Remove confetti after animation
+    setTimeout(() => {
+      confettiContainer.remove();
+    }, 6000);
   }
 
   function handleLevelUp(data) {
@@ -237,23 +322,82 @@
     document.querySelector('.round-total').textContent = totalRounds;
   }
 
+  function handlePlatformHighlight(data) {
+    const platform6Indicator = document.querySelector('.platform-6-indicator');
+    const platform7Indicator = document.querySelector('.platform-7-indicator');
+
+    if (data.platform === 6) {
+      if (data.active) {
+        platform6Indicator.classList.add('active');
+      } else {
+        platform6Indicator.classList.remove('active');
+      }
+    } else if (data.platform === 7) {
+      if (data.active) {
+        platform7Indicator.classList.add('active');
+      } else {
+        platform7Indicator.classList.remove('active');
+      }
+    } else {
+      // Clear all highlights
+      platform6Indicator.classList.remove('active');
+      platform7Indicator.classList.remove('active');
+    }
+  }
+
   function showScorePopup(rating, score, timingDelta) {
     const popup = document.querySelector('.score-popup');
 
     let color = '#FFFFFF';
+    let icon = '';
     let text = rating;
+    let shake = false;
 
-    if (rating === 'PERFECT') color = '#00FF00';
-    else if (rating === 'GOOD') color = '#FFFF00';
-    else if (rating === 'LATE') color = '#FFA500';
-    else if (rating === 'MISS' || rating === 'WRONG_PLATFORM') color = '#FF0000';
+    // Color-coded feedback with icons
+    if (rating === 'PERFECT') {
+      color = '#00FF00';
+      icon = '⭐';
+      text = 'PERFECT!';
+      shake = true; // Screen shake on perfect!
+    } else if (rating === 'GOOD') {
+      color = '#FFFF00';
+      icon = '✓';
+      text = 'GOOD';
+    } else if (rating === 'LATE') {
+      color = '#FFA500';
+      icon = '⚠️';
+      text = 'LATE';
+    } else if (rating === 'MISS') {
+      color = '#FF0000';
+      icon = '✗';
+      text = 'MISS';
+    } else if (rating === 'WRONG_PLATFORM') {
+      color = '#FF0000';
+      icon = '✗';
+      text = 'WRONG!';
+    }
+
+    // Show timing delta for feedback
+    const timingText = timingDelta < 1000
+      ? `<div class="score-timing">${timingDelta > 0 ? '+' : ''}${Math.round(timingDelta)}ms</div>`
+      : '';
 
     popup.innerHTML = `
+      <div class="score-icon">${icon}</div>
       <div class="score-rating" style="color: ${color}">${text}</div>
-      <div class="score-points">+${score}</div>
+      <div class="score-points" style="color: ${color}">+${score}</div>
+      ${timingText}
     `;
 
     popup.classList.add('show');
+
+    // Screen shake on PERFECT hits!
+    if (shake) {
+      document.body.classList.add('screen-shake');
+      setTimeout(() => {
+        document.body.classList.remove('screen-shake');
+      }, 300);
+    }
 
     setTimeout(() => {
       popup.classList.remove('show');
@@ -427,17 +571,32 @@
     animation: scorePopupAnim 2s ease-out;
   }
 
+  .score-icon {
+    font-size: 72px;
+    margin-bottom: 10px;
+    filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.8));
+  }
+
   .score-rating {
     font-size: 48px;
     font-weight: 900;
     margin-bottom: 10px;
     text-shadow: 0 0 20px currentColor;
+    letter-spacing: 2px;
   }
 
   .score-points {
     font-size: 36px;
     font-weight: 700;
-    color: #FFFFFF;
+    text-shadow: 0 0 10px currentColor;
+    margin-bottom: 8px;
+  }
+
+  .score-timing {
+    font-size: 18px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    font-family: 'Courier New', monospace;
   }
 
   @keyframes scorePopupAnim {
@@ -456,6 +615,89 @@
     100% {
       transform: translate(-50%, -60%) scale(0.8);
       opacity: 0;
+    }
+  }
+
+  /* Screen shake animation for PERFECT hits */
+  @keyframes screenShake {
+    0%, 100% { transform: translate(0, 0); }
+    10% { transform: translate(-2px, -2px); }
+    20% { transform: translate(2px, 2px); }
+    30% { transform: translate(-2px, 2px); }
+    40% { transform: translate(2px, -2px); }
+    50% { transform: translate(-2px, -2px); }
+    60% { transform: translate(2px, 2px); }
+    70% { transform: translate(-2px, 2px); }
+    80% { transform: translate(2px, -2px); }
+    90% { transform: translate(-2px, -2px); }
+  }
+
+  .screen-shake {
+    animation: screenShake 0.3s ease-in-out;
+  }
+
+  /* ===================================================================== */
+  /* PLATFORM INDICATORS (LEFT & RIGHT) */
+  /* ===================================================================== */
+
+  .platform-indicator {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 120px;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 6px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0.4;
+    transition: all 0.2s ease;
+    pointer-events: none;
+  }
+
+  .platform-6-indicator {
+    left: 100px;
+    border-color: rgba(0, 255, 255, 0.3);
+  }
+
+  .platform-7-indicator {
+    right: 100px;
+    border-color: rgba(255, 20, 147, 0.3);
+  }
+
+  .platform-indicator.active {
+    opacity: 1;
+    transform: translateY(-50%) scale(1.2);
+    animation: platformPulse 0.3s ease-in-out infinite;
+    box-shadow: 0 0 40px currentColor;
+  }
+
+  .platform-6-indicator.active {
+    border-color: #00FFFF;
+    background: rgba(0, 255, 255, 0.2);
+    color: #00FFFF;
+  }
+
+  .platform-7-indicator.active {
+    border-color: #FF1493;
+    background: rgba(255, 20, 147, 0.2);
+    color: #FF1493;
+  }
+
+  .platform-number {
+    font-size: 72px;
+    font-weight: 900;
+    text-shadow: 0 0 20px currentColor;
+  }
+
+  @keyframes platformPulse {
+    0%, 100% {
+      transform: translateY(-50%) scale(1.2);
+    }
+    50% {
+      transform: translateY(-50%) scale(1.3);
     }
   }
 
@@ -522,6 +764,50 @@
     transform: scale(0.9);
     background: rgba(255, 255, 255, 0.3);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+  }
+
+  /* ===================================================================== */
+  /* VICTORY CELEBRATION: CONFETTI */
+  /* ===================================================================== */
+
+  .confetti-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 9999;
+  }
+
+  .confetti {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    top: -10px;
+    opacity: 0;
+    animation: confettiFall linear forwards;
+  }
+
+  @keyframes confettiFall {
+    0% {
+      transform: translateY(0) rotate(0deg);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(100vh) rotate(720deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes victoryPulse {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
   }
 
   /* ===================================================================== */

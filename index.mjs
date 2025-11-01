@@ -77756,6 +77756,27 @@ var AUDIO_TRACKS = [
     uri: "audio/six_seven_hype.mp3",
     beatTimingsUri: "audio/beat_timings/six_seven_hype.json",
     durationMs: 30000
+  },
+  {
+    id: "six_seven_chill",
+    name: "6-7 Chill Vibes",
+    uri: "audio/six_seven_chill.mp3",
+    beatTimingsUri: "audio/beat_timings/six_seven_chill.json",
+    durationMs: 30000
+  },
+  {
+    id: "six_seven_deep",
+    name: "6-7 Deep Voice",
+    uri: "audio/six_seven_deep.mp3",
+    beatTimingsUri: "audio/beat_timings/six_seven_deep.json",
+    durationMs: 30000
+  },
+  {
+    id: "six_seven_chipmunk",
+    name: "6-7 Chipmunk",
+    uri: "audio/six_seven_chipmunk.mp3",
+    beatTimingsUri: "audio/beat_timings/six_seven_chipmunk.json",
+    durationMs: 30000
   }
 ];
 var TRACK_SELECTION_MODE = "random";

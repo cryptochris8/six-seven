@@ -77721,7 +77721,7 @@ var q1 = t(kQ(), 1);
 var z1 = t(kQ(), 1);
 var DG1 = t(BG1(), 1);
 
-// gameConfig.ts
+// gameConfig.js
 var MINIMUM_PLAYERS_TO_START = 2;
 var ROUNDS_PER_MATCH = 6;
 var SECONDS_BETWEEN_ROUNDS = 5;
@@ -77749,34 +77749,6 @@ var AUDIO_TRACKS = [
     uri: "audio/six_seven_original.mp3",
     beatTimingsUri: "audio/beat_timings/six_seven_original.json",
     durationMs: 30000
-  },
-  {
-    id: "six_seven_hype",
-    name: "6-7 Hype Beast",
-    uri: "audio/six_seven_hype.mp3",
-    beatTimingsUri: "audio/beat_timings/six_seven_hype.json",
-    durationMs: 30000
-  },
-  {
-    id: "six_seven_chill",
-    name: "6-7 Chill Vibes",
-    uri: "audio/six_seven_chill.mp3",
-    beatTimingsUri: "audio/beat_timings/six_seven_chill.json",
-    durationMs: 30000
-  },
-  {
-    id: "six_seven_deep",
-    name: "6-7 Deep Voice",
-    uri: "audio/six_seven_deep.mp3",
-    beatTimingsUri: "audio/beat_timings/six_seven_deep.json",
-    durationMs: 30000
-  },
-  {
-    id: "six_seven_chipmunk",
-    name: "6-7 Chipmunk",
-    uri: "audio/six_seven_chipmunk.mp3",
-    beatTimingsUri: "audio/beat_timings/six_seven_chipmunk.json",
-    durationMs: 30000
   }
 ];
 var TRACK_SELECTION_MODE = "random";
@@ -77793,7 +77765,7 @@ var DEFAULT_PLAYER_PROFILE = {
   lastPlayedAt: Date.now()
 };
 
-// classes/BeatManager.ts
+// classes/BeatManager.js
 class BeatManager {
   _beatData;
   _roundStartTime = 0;
@@ -77901,7 +77873,7 @@ class BeatManager {
   }
 }
 
-// classes/GamePlayerEntity.ts
+// classes/GamePlayerEntity.js
 class GamePlayerEntity extends eO {
   _isEliminated = false;
   _currentScore = 0;
@@ -77982,7 +77954,7 @@ class GamePlayerEntity extends eO {
   }
 }
 
-// classes/PlatformEntity.ts
+// classes/PlatformEntity.js
 class PlatformEntity extends B8 {
   _number;
   constructor(number) {
@@ -78008,7 +77980,7 @@ class PlatformEntity extends B8 {
   stopGlow() {}
 }
 
-// classes/GameManager.ts
+// classes/GameManager.js
 import { readFileSync } from "fs";
 import { join } from "path";
 
@@ -78021,6 +77993,8 @@ class GameManager {
   _platform6;
   _platform7;
   _roundAudio;
+  _lobbyAmbience;
+  _matchStartVoice;
   _alivePlayers = new Set;
   _playerScores = new Map;
   _playerPerfectHits = new Map;
@@ -78031,6 +78005,8 @@ class GameManager {
   _platformGlowTimers = [];
   _lastInputTime = new Map;
   _inputCounts = new Map;
+  _consecutiveAudioErrors = 0;
+  MAX_AUDIO_RETRIES = 3;
   setupGame(world) {
     this.world = world;
     console.log("[6-7 BATTLEGROUND] Setting up game...");
@@ -78079,6 +78055,7 @@ class GameManager {
       const goods = this._playerGoodHits.get(player.id) || 0;
       this._playerGoodHits.set(player.id, goods + 1);
     }
+    this._playSoundEffect(result.rating);
     player.ui.sendData({
       type: "score",
       rating: result.rating,
@@ -78108,6 +78085,7 @@ class GameManager {
     if (!this.world)
       return;
     this._gameState = "WAITING";
+    this._playLobbyAmbience();
     if (this._waitTimer)
       clearTimeout(this._waitTimer);
     this._waitTimer = setInterval(() => {
@@ -78130,6 +78108,8 @@ class GameManager {
     if (!this.world)
       return;
     console.log("[6-7 BATTLEGROUND] Match starting!");
+    this._stopLobbyAmbience();
+    this._playMatchStartVoice();
     this._currentRound = 0;
     this._alivePlayers.clear();
     this._playerScores.clear();
@@ -78203,27 +78183,53 @@ class GameManager {
     if (!this.world)
       return;
     this._gameState = "PLAYING";
-    const selectedTrack = this._selectTrack();
-    console.log(`[6-7 BATTLEGROUND] Selected track: ${selectedTrack.name}`);
-    const beatTimingData = this._loadBeatTimingData(selectedTrack.beatTimingsUri);
-    this._beatManager = new BeatManager(beatTimingData);
-    const roundStartTime = Date.now();
-    this._beatManager.startRound(roundStartTime);
-    this._roundAudio = new PW({
-      uri: selectedTrack.uri,
-      loop: false,
-      volume: 0.8
-    });
-    this._roundAudio.play(this.world);
-    this._broadcastToAll({
-      type: "track-selected",
-      trackName: selectedTrack.name
-    });
-    console.log("[6-7 BATTLEGROUND] Round playing! Audio started.");
-    this._schedulePlatformGlows();
-    this._roundTimer = setTimeout(() => {
-      this._endRound();
-    }, selectedTrack.durationMs);
+    try {
+      const selectedTrack = this._selectTrack();
+      console.log(`[6-7 BATTLEGROUND] Selected track: ${selectedTrack.name}`);
+      const beatTimingData = this._loadBeatTimingData(selectedTrack.beatTimingsUri);
+      this._beatManager = new BeatManager(beatTimingData);
+      const roundStartTime = Date.now();
+      this._beatManager.startRound(roundStartTime);
+      this._roundAudio = new PW({
+        uri: selectedTrack.uri,
+        loop: false,
+        volume: 0.8
+      });
+      this._roundAudio.play(this.world);
+      this._consecutiveAudioErrors = 0;
+      this._broadcastToAll({
+        type: "track-selected",
+        trackName: selectedTrack.name
+      });
+      console.log("[6-7 BATTLEGROUND] Round playing! Audio started.");
+      this._schedulePlatformGlows();
+      this._roundTimer = setTimeout(() => {
+        this._endRound();
+      }, selectedTrack.durationMs);
+    } catch (error) {
+      console.error("[6-7 BATTLEGROUND] CRITICAL: Failed to start round - audio or timing data error:", error);
+      this._consecutiveAudioErrors++;
+      this._broadcastToAll({
+        type: "error",
+        message: "⚠️ Audio failed to load. Retrying..."
+      });
+      if (this._consecutiveAudioErrors < this.MAX_AUDIO_RETRIES) {
+        setTimeout(() => {
+          console.log(`[6-7 BATTLEGROUND] Attempting audio recovery (attempt ${this._consecutiveAudioErrors}/${this.MAX_AUDIO_RETRIES})...`);
+          this._playRound();
+        }, 2000);
+      } else {
+        console.error("[6-7 BATTLEGROUND] Max audio retries exceeded. Aborting match.");
+        this._broadcastToAll({
+          type: "error",
+          message: "❌ Audio system error. Match cancelled. Please restart."
+        });
+        setTimeout(() => {
+          this._resetMatch();
+          this._waitForPlayers();
+        }, 5000);
+      }
+    }
   }
   _schedulePlatformGlows() {
     if (!this._beatManager)
@@ -78329,14 +78335,44 @@ class GameManager {
       this._waitForPlayers();
     }, WINNER_ANNOUNCEMENT_DURATION_MS);
   }
+  _resetMatch() {
+    console.log("[6-7 BATTLEGROUND] Resetting match state...");
+    if (this._roundTimer)
+      clearTimeout(this._roundTimer);
+    if (this._countdownTimer)
+      clearTimeout(this._countdownTimer);
+    if (this._waitTimer)
+      clearInterval(this._waitTimer);
+    this._clearPlatformGlowTimers();
+    this._currentRound = 0;
+    this._gameState = "WAITING";
+    this._alivePlayers.clear();
+    this._playerScores.clear();
+    this._playerPerfectHits.clear();
+    this._playerGoodHits.clear();
+    this._consecutiveAudioErrors = 0;
+    this._beatManager = undefined;
+    this._roundAudio = undefined;
+    console.log("[6-7 BATTLEGROUND] Match state reset complete");
+  }
   _eliminatePlayer(player) {
     this._alivePlayers.delete(player.id);
     const entity = this.world?.entityManager.getAllPlayerEntities().find((e2) => e2.player.id === player.id);
     if (entity) {
       entity.eliminate();
       entity.setPosition(SPECTATOR_POSITION);
+      player.ui.sendData({
+        type: "spectating",
+        message: "\uD83D\uDC7B You're spectating! Watch the remaining players compete.",
+        remainingPlayers: this._alivePlayers.size
+      });
     }
     console.log(`[6-7 BATTLEGROUND] Player ${player.username} eliminated`);
+    this._broadcastToAll({
+      type: "player-eliminated",
+      username: player.username,
+      remainingPlayers: this._alivePlayers.size
+    });
     if (this._alivePlayers.size <= 1 && this._gameState === "PLAYING") {
       if (this._roundTimer)
         clearTimeout(this._roundTimer);
@@ -78391,6 +78427,74 @@ class GameManager {
     });
     this._broadcastLeaderboard();
   }
+  _playSoundEffect(rating) {
+    if (!this.world)
+      return;
+    let sfxUri = null;
+    switch (rating) {
+      case "PERFECT":
+        sfxUri = "audio/sfx/perfect.mp3";
+        break;
+      case "MISS":
+      case "WRONG_PLATFORM":
+        sfxUri = "audio/sfx/miss.mp3";
+        break;
+    }
+    if (sfxUri) {
+      try {
+        const sfx = new PW({
+          uri: sfxUri,
+          loop: false,
+          volume: 0.6
+        });
+        sfx.play(this.world);
+      } catch (error) {
+        console.warn(`[SFX] Failed to play sound: ${sfxUri}`, error);
+      }
+    }
+  }
+  _playLobbyAmbience() {
+    if (!this.world)
+      return;
+    try {
+      this._stopLobbyAmbience();
+      this._lobbyAmbience = new PW({
+        uri: "audio/lobby_ambience.mp3",
+        loop: true,
+        volume: 0.35
+      });
+      this._lobbyAmbience.play(this.world);
+      console.log("[6-7 BATTLEGROUND] Lobby ambience started");
+    } catch (error) {
+      console.warn("[AUDIO] Failed to play lobby ambience:", error);
+    }
+  }
+  _stopLobbyAmbience() {
+    if (this._lobbyAmbience) {
+      try {
+        this._lobbyAmbience.pause();
+        this._lobbyAmbience = undefined;
+        console.log("[6-7 BATTLEGROUND] Lobby ambience stopped");
+      } catch (error) {
+        console.warn("[AUDIO] Failed to stop lobby ambience:", error);
+      }
+    }
+  }
+  _playMatchStartVoice() {
+    if (!this.world)
+      return;
+    try {
+      this._matchStartVoice = new PW({
+        uri: "audio/match_start_voice.mp3",
+        loop: false,
+        volume: 0.75
+      });
+      this._matchStartVoice.play(this.world);
+      console.log("[6-7 BATTLEGROUND] Match start voice played!");
+    } catch (error) {
+      console.warn("[AUDIO] Failed to play match start voice:", error);
+    }
+  }
   async _loadPlayerProfile(player, entity) {
     try {
       const data = await player.getPersistedData();
@@ -78442,8 +78546,8 @@ var map_default = {
     },
     {
       id: 4,
-      name: "dark-gray-concrete",
-      textureUri: "blocks/dark-gray-concrete.png",
+      name: "gray-concrete",
+      textureUri: "blocks/gray-concrete.png",
       isCustom: false,
       isMultiTexture: false
     },

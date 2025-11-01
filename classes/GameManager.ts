@@ -60,6 +60,8 @@ export class GameManager {
   private _platform6?: PlatformEntity;
   private _platform7?: PlatformEntity;
   private _roundAudio?: Audio;
+  private _lobbyAmbience?: Audio;
+  private _matchStartVoice?: Audio;
 
   // Player tracking
   private _alivePlayers = new Set<string>();
@@ -76,6 +78,10 @@ export class GameManager {
   // Input rate limiting (anti-cheat)
   private _lastInputTime = new Map<string, number>();
   private _inputCounts = new Map<string, number>();
+
+  // Error recovery tracking
+  private _consecutiveAudioErrors = 0;
+  private readonly MAX_AUDIO_RETRIES = 3;
 
   /**
    * Setup the game world
@@ -163,6 +169,9 @@ export class GameManager {
       this._playerGoodHits.set(player.id, goods + 1);
     }
 
+    // Play sound effect based on rating
+    this._playSoundEffect(result.rating);
+
     // Send feedback to player
     player.ui.sendData({
       type: 'score',
@@ -217,6 +226,9 @@ export class GameManager {
 
     this._gameState = 'WAITING';
 
+    // Start lobby ambience (looping background music)
+    this._playLobbyAmbience();
+
     // Clear existing timer
     if (this._waitTimer) clearTimeout(this._waitTimer);
 
@@ -246,6 +258,12 @@ export class GameManager {
     if (!this.world) return;
 
     console.log('[6-7 BATTLEGROUND] Match starting!');
+
+    // Stop lobby ambience
+    this._stopLobbyAmbience();
+
+    // Play match start hype voice
+    this._playMatchStartVoice();
 
     // Reset match state
     this._currentRound = 0;
@@ -360,43 +378,81 @@ export class GameManager {
 
     this._gameState = 'PLAYING';
 
-    // Select and load audio track for this round
-    const selectedTrack = this._selectTrack();
-    console.log(`[6-7 BATTLEGROUND] Selected track: ${selectedTrack.name}`);
+    try {
+      // Select and load audio track for this round
+      const selectedTrack = this._selectTrack();
+      console.log(`[6-7 BATTLEGROUND] Selected track: ${selectedTrack.name}`);
 
-    // Load beat timing data for the selected track
-    const beatTimingData = this._loadBeatTimingData(selectedTrack.beatTimingsUri);
+      // Load beat timing data for the selected track
+      const beatTimingData = this._loadBeatTimingData(selectedTrack.beatTimingsUri);
 
-    // Initialize beat manager with the selected track's timing data
-    this._beatManager = new BeatManager(beatTimingData);
+      // Initialize beat manager with the selected track's timing data
+      this._beatManager = new BeatManager(beatTimingData);
 
-    const roundStartTime = Date.now();
-    this._beatManager.startRound(roundStartTime);
+      const roundStartTime = Date.now();
+      this._beatManager.startRound(roundStartTime);
 
-    // Play the selected audio track
-    this._roundAudio = new Audio({
-      uri: selectedTrack.uri,
-      loop: false,
-      volume: 0.8
-    });
+      // Play the selected audio track
+      this._roundAudio = new Audio({
+        uri: selectedTrack.uri,
+        loop: false,
+        volume: 0.8
+      });
 
-    this._roundAudio.play(this.world);
+      this._roundAudio.play(this.world);
 
-    // Announce track to players
-    this._broadcastToAll({
-      type: 'track-selected',
-      trackName: selectedTrack.name
-    });
+      // Audio started successfully - reset error counter
+      this._consecutiveAudioErrors = 0;
 
-    console.log('[6-7 BATTLEGROUND] Round playing! Audio started.');
+      // Announce track to players
+      this._broadcastToAll({
+        type: 'track-selected',
+        trackName: selectedTrack.name
+      });
 
-    // Schedule platform highlight effects
-    this._schedulePlatformGlows();
+      console.log('[6-7 BATTLEGROUND] Round playing! Audio started.');
 
-    // End round after track duration
-    this._roundTimer = setTimeout(() => {
-      this._endRound();
-    }, selectedTrack.durationMs);
+      // Schedule platform highlight effects
+      this._schedulePlatformGlows();
+
+      // End round after track duration
+      this._roundTimer = setTimeout(() => {
+        this._endRound();
+      }, selectedTrack.durationMs);
+
+    } catch (error) {
+      console.error('[6-7 BATTLEGROUND] CRITICAL: Failed to start round - audio or timing data error:', error);
+
+      this._consecutiveAudioErrors++;
+
+      // Notify all players
+      this._broadcastToAll({
+        type: 'error',
+        message: '⚠️ Audio failed to load. Retrying...'
+      });
+
+      // Attempt recovery based on retry count
+      if (this._consecutiveAudioErrors < this.MAX_AUDIO_RETRIES) {
+        // Retry the round after a short delay
+        setTimeout(() => {
+          console.log(`[6-7 BATTLEGROUND] Attempting audio recovery (attempt ${this._consecutiveAudioErrors}/${this.MAX_AUDIO_RETRIES})...`);
+          this._playRound();
+        }, 2000);
+      } else {
+        // Max retries exceeded - abort match
+        console.error('[6-7 BATTLEGROUND] Max audio retries exceeded. Aborting match.');
+        this._broadcastToAll({
+          type: 'error',
+          message: '❌ Audio system error. Match cancelled. Please restart.'
+        });
+
+        // Return to waiting state
+        setTimeout(() => {
+          this._resetMatch();
+          this._waitForPlayers();
+        }, 5000);
+      }
+    }
   }
 
   /**
@@ -562,6 +618,34 @@ export class GameManager {
   }
 
   /**
+   * Reset match state and clear all timers (for error recovery)
+   */
+  private _resetMatch(): void {
+    console.log('[6-7 BATTLEGROUND] Resetting match state...');
+
+    // Clear all timers
+    if (this._roundTimer) clearTimeout(this._roundTimer);
+    if (this._countdownTimer) clearTimeout(this._countdownTimer);
+    if (this._waitTimer) clearInterval(this._waitTimer);
+    this._clearPlatformGlowTimers();
+
+    // Reset match state
+    this._currentRound = 0;
+    this._gameState = 'WAITING';
+    this._alivePlayers.clear();
+    this._playerScores.clear();
+    this._playerPerfectHits.clear();
+    this._playerGoodHits.clear();
+    this._consecutiveAudioErrors = 0;
+
+    // Reset beat manager
+    this._beatManager = undefined;
+    this._roundAudio = undefined;
+
+    console.log('[6-7 BATTLEGROUND] Match state reset complete');
+  }
+
+  /**
    * Eliminate a player
    */
   private _eliminatePlayer(player: Player): void {
@@ -576,9 +660,23 @@ export class GameManager {
 
       // Move to spectator position
       entity.setPosition(SPECTATOR_POSITION);
+
+      // Send spectator notification to eliminated player
+      player.ui.sendData({
+        type: 'spectating',
+        message: '👻 You\'re spectating! Watch the remaining players compete.',
+        remainingPlayers: this._alivePlayers.size
+      });
     }
 
     console.log(`[6-7 BATTLEGROUND] Player ${player.username} eliminated`);
+
+    // Broadcast elimination to all players
+    this._broadcastToAll({
+      type: 'player-eliminated',
+      username: player.username,
+      remainingPlayers: this._alivePlayers.size
+    });
 
     // Check if only one player left (instant win)
     if (this._alivePlayers.size <= 1 && this._gameState === 'PLAYING') {
@@ -664,6 +762,99 @@ export class GameManager {
   }
 
   /**
+   * Play sound effect based on score rating
+   */
+  private _playSoundEffect(rating: string): void {
+    if (!this.world) return;
+
+    let sfxUri: string | null = null;
+
+    switch (rating) {
+      case 'PERFECT':
+        sfxUri = 'audio/sfx/perfect.mp3';
+        break;
+      case 'MISS':
+      case 'WRONG_PLATFORM':
+        sfxUri = 'audio/sfx/miss.mp3';
+        break;
+      // GOOD and LATE ratings have no sound effect (silent feedback)
+    }
+
+    if (sfxUri) {
+      try {
+        const sfx = new Audio({
+          uri: sfxUri,
+          loop: false,
+          volume: 0.6
+        });
+        sfx.play(this.world);
+      } catch (error) {
+        // Silently fail if SFX doesn't load - not critical
+        console.warn(`[SFX] Failed to play sound: ${sfxUri}`, error);
+      }
+    }
+  }
+
+  /**
+   * Play lobby ambience (looping background music)
+   */
+  private _playLobbyAmbience(): void {
+    if (!this.world) return;
+
+    try {
+      // Stop existing lobby audio if playing
+      this._stopLobbyAmbience();
+
+      // Create looping lobby ambience
+      this._lobbyAmbience = new Audio({
+        uri: 'audio/lobby_ambience.mp3',
+        loop: true,
+        volume: 0.35 // Subtle background music (35%)
+      });
+
+      this._lobbyAmbience.play(this.world);
+      console.log('[6-7 BATTLEGROUND] Lobby ambience started');
+    } catch (error) {
+      console.warn('[AUDIO] Failed to play lobby ambience:', error);
+    }
+  }
+
+  /**
+   * Stop lobby ambience
+   */
+  private _stopLobbyAmbience(): void {
+    if (this._lobbyAmbience) {
+      try {
+        this._lobbyAmbience.pause();
+        this._lobbyAmbience = undefined;
+        console.log('[6-7 BATTLEGROUND] Lobby ambience stopped');
+      } catch (error) {
+        console.warn('[AUDIO] Failed to stop lobby ambience:', error);
+      }
+    }
+  }
+
+  /**
+   * Play match start hype voice
+   */
+  private _playMatchStartVoice(): void {
+    if (!this.world) return;
+
+    try {
+      this._matchStartVoice = new Audio({
+        uri: 'audio/match_start_voice.mp3',
+        loop: false,
+        volume: 0.75 // Clear and impactful (75%)
+      });
+
+      this._matchStartVoice.play(this.world);
+      console.log('[6-7 BATTLEGROUND] Match start voice played!');
+    } catch (error) {
+      console.warn('[AUDIO] Failed to play match start voice:', error);
+    }
+  }
+
+  /**
    * Load player profile from persisted data
    */
   private async _loadPlayerProfile(player: Player, entity: GamePlayerEntity): Promise<void> {
@@ -672,7 +863,9 @@ export class GameManager {
 
       if (data && Object.keys(data).length > 0) {
         entity.setProfile(data);
-        console.log(`[6-7 BATTLEGROUND] Loaded profile for ${player.username}: Level ${data.level}`);
+        // Update Rizz Rank based on total XP (in case thresholds changed)
+        entity.getRizzRank();
+        console.log(`[6-7 BATTLEGROUND] Loaded profile for ${player.username}: Level ${data.level}, Rizz Rank: ${entity.profile.rizzRank}`);
       } else {
         // New player - set default profile
         entity.setProfile({ ...DEFAULT_PLAYER_PROFILE });

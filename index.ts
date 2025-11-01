@@ -94,13 +94,15 @@ startServer(world => {
     if (entities.length > 0) {
       const playerEntity = entities[0] as any;
       const profile = playerEntity.profile;
+      const totalXP = playerEntity.getTotalXP();
+      const rizzRank = playerEntity.getRizzRank();
 
       world.chatManager.sendPlayerMessage(player, '=== YOUR STATS ===', '00FF00');
-      world.chatManager.sendPlayerMessage(player, `Level: ${profile.level} | XP: ${profile.xp}`);
+      world.chatManager.sendPlayerMessage(player, `Level: ${profile.level} | XP: ${profile.xp}/${profile.level * 1000}`);
+      world.chatManager.sendPlayerMessage(player, `Total XP: ${totalXP} | Rizz Rank: ${rizzRank}`, 'FFD700');
       world.chatManager.sendPlayerMessage(player, `Total Matches: ${profile.totalMatches}`);
-      world.chatManager.sendPlayerMessage(player, `Wins: ${profile.wins}`);
-      world.chatManager.sendPlayerMessage(player, `Perfect Hits: ${profile.perfectHits}`);
-      world.chatManager.sendPlayerMessage(player, `Rizz Rank: ${profile.rizzRank}`);
+      world.chatManager.sendPlayerMessage(player, `Wins: ${profile.wins} | Win Rate: ${profile.totalMatches > 0 ? Math.round((profile.wins / profile.totalMatches) * 100) : 0}%`);
+      world.chatManager.sendPlayerMessage(player, `Perfect Hits: ${profile.perfectHits} | Good Hits: ${profile.goodHits}`);
     }
   });
 

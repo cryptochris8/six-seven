@@ -185,6 +185,18 @@
       case 'platform-highlight':
         handlePlatformHighlight(data);
         break;
+
+      case 'spectating':
+        handleSpectating(data);
+        break;
+
+      case 'error':
+        handleError(data);
+        break;
+
+      case 'player-eliminated':
+        handlePlayerEliminated(data);
+        break;
     }
   });
 
@@ -398,6 +410,39 @@
         document.body.classList.remove('screen-shake');
       }, 300);
     }
+
+    setTimeout(() => {
+      popup.classList.remove('show');
+    }, 2000);
+  }
+
+  function handleSpectating(data) {
+    const stateText = document.querySelector('.game-state-text');
+    stateText.innerHTML = `
+      <div style="font-size: 24px; margin-bottom: 10px;">👻 SPECTATING</div>
+      <div style="font-size: 16px;">${data.message}</div>
+      <div style="font-size: 14px; margin-top: 8px; opacity: 0.8;">${data.remainingPlayers} player${data.remainingPlayers !== 1 ? 's' : ''} remaining</div>
+    `;
+    stateText.style.display = 'block';
+    stateText.style.color = '#AAAAAA';
+  }
+
+  function handleError(data) {
+    const stateText = document.querySelector('.game-state-text');
+    stateText.textContent = data.message;
+    stateText.style.display = 'block';
+    stateText.style.color = '#FF6B6B';
+    stateText.style.fontSize = '20px';
+  }
+
+  function handlePlayerEliminated(data) {
+    // Show brief notification
+    const popup = document.querySelector('.score-popup');
+    popup.innerHTML = `
+      <div style="font-size: 18px; color: #FF6B6B;">💀 ${data.username} eliminated!</div>
+      <div style="font-size: 14px; color: #FFFFFF; margin-top: 8px;">${data.remainingPlayers} remaining</div>
+    `;
+    popup.classList.add('show');
 
     setTimeout(() => {
       popup.classList.remove('show');

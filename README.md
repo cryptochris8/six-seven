@@ -4,6 +4,8 @@
 
 Built on [Hytopia](https://hytopia.com/) - The browser-based multiplayer game engine.
 
+**🚀 V1.0 LAUNCH:** Currently shipping with 1 perfectly-tuned voice track! Multi-voice update (V1.1) coming soon based on player feedback.
+
 ---
 
 ## 🎯 Game Concept
@@ -14,6 +16,7 @@ Built on [Hytopia](https://hytopia.com/) - The browser-based multiplayer game en
 - **Match Length:** 3-5 minutes
 - **Rounds:** 6 rounds of intense beat-matching action
 - **Platform:** Browser-based (no download required!)
+- **Audio:** 1 professionally-timed voice track (4 more voices coming in V1.1!)
 
 ---
 
@@ -238,34 +241,42 @@ All progression is automatically saved using Hytopia's built-in persistence!
 
 ## 🎯 Roadmap
 
-### MVP (Current) ✅
+### V1.0 - LIVE NOW ✅
 - [x] Platform 6/7 jumping mechanic
-- [x] Beat timing validation
-- [x] Round-based elimination
-- [x] Leaderboard
-- [x] Player progression (XP/levels)
-- [x] Mobile support
+- [x] Beat timing validation (±150ms PERFECT window)
+- [x] Round-based elimination (6 rounds)
+- [x] Real-time leaderboard
+- [x] Player progression (XP/levels/Rizz Ranks)
+- [x] Mobile support (touch controls)
+- [x] 1 perfectly-timed voice track
+- [x] Full UI with score popups & platform indicators
 
-### Phase 2 (Next)
-- [ ] Add actual "6-7" audio (with proper licensing)
+### V1.1 - Multi-Voice Update (Coming Soon)
+- [ ] 4 additional voice variations (Hype, Chill, Deep, Chipmunk)
+- [ ] Custom beat timing per voice track
+- [ ] Track announcement at round start
+- [ ] Random track selection each round
+
+### V1.2 - Visual Polish (Next)
 - [ ] Platform visual effects (glowing, particles)
-- [ ] Emote on beat micro-game
-- [ ] Boss round finale
-- [ ] Daily challenges
+- [ ] Audio-reactive environment
+- [ ] Enhanced PERFECT hit celebrations
+- [ ] Victory highlight clips
 
-### Phase 3 (Future)
-- [ ] Cosmetics integration (Hytopia Marketplace)
-- [ ] Seasonal events
-- [ ] Multiple audio tracks
+### Future Updates
+- [ ] Cosmetics integration (Hytopia Marketplace - Nov 2025)
+- [ ] Seasonal themed tracks
+- [ ] Boss round finale
 - [ ] Spectator camera improvements
+- [ ] Daily challenges & leaderboards
 
 ---
 
 ## 🐛 Known Issues
 
-1. **No audio file included** - You must add your own (see above)
-2. **Platform textures missing** - Currently using default Hytopia blocks
-3. **Network latency** - Timing windows may need adjustment based on player ping
+1. **V1.0 ships with single voice** - Additional voice variations coming in V1.1 after player feedback
+2. **Network latency** - Timing windows (±150ms PERFECT) may need adjustment based on player ping
+3. **Platform textures** - Currently using default Hytopia blocks (grass & sandstone)
 
 ### Reporting Bugs
 

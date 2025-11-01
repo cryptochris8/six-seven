@@ -76,35 +76,39 @@ export const AUDIO_TRACKS: AudioTrack[] = [
     uri: 'audio/six_seven_original.mp3',
     beatTimingsUri: 'audio/beat_timings/six_seven_original.json',
     durationMs: 30000
-  },
-  {
-    id: 'six_seven_hype',
-    name: '6-7 Hype Beast',
-    uri: 'audio/six_seven_hype.mp3',
-    beatTimingsUri: 'audio/beat_timings/six_seven_hype.json',
-    durationMs: 30000
-  },
-  {
-    id: 'six_seven_chill',
-    name: '6-7 Chill Vibes',
-    uri: 'audio/six_seven_chill.mp3',
-    beatTimingsUri: 'audio/beat_timings/six_seven_chill.json',
-    durationMs: 30000
-  },
-  {
-    id: 'six_seven_deep',
-    name: '6-7 Deep Voice',
-    uri: 'audio/six_seven_deep.mp3',
-    beatTimingsUri: 'audio/beat_timings/six_seven_deep.json',
-    durationMs: 30000
-  },
-  {
-    id: 'six_seven_chipmunk',
-    name: '6-7 Chipmunk',
-    uri: 'audio/six_seven_chipmunk.mp3',
-    beatTimingsUri: 'audio/beat_timings/six_seven_chipmunk.json',
-    durationMs: 30000
   }
+  // =========================================================================
+  // V1.1 UPDATE: Additional voices coming soon!
+  // Uncomment these after tuning beat timings per SYNCING_AUDIO_TIMINGS.md
+  // =========================================================================
+  // {
+  //   id: 'six_seven_hype',
+  //   name: '6-7 Hype Beast',
+  //   uri: 'audio/six_seven_hype.mp3',
+  //   beatTimingsUri: 'audio/beat_timings/six_seven_hype.json',
+  //   durationMs: 30000
+  // },
+  // {
+  //   id: 'six_seven_chill',
+  //   name: '6-7 Chill Vibes',
+  //   uri: 'audio/six_seven_chill.mp3',
+  //   beatTimingsUri: 'audio/beat_timings/six_seven_chill.json',
+  //   durationMs: 30000
+  // },
+  // {
+  //   id: 'six_seven_deep',
+  //   name: '6-7 Deep Voice',
+  //   uri: 'audio/six_seven_deep.mp3',
+  //   beatTimingsUri: 'audio/beat_timings/six_seven_deep.json',
+  //   durationMs: 30000
+  // },
+  // {
+  //   id: 'six_seven_chipmunk',
+  //   name: '6-7 Chipmunk',
+  //   uri: 'audio/six_seven_chipmunk.mp3',
+  //   beatTimingsUri: 'audio/beat_timings/six_seven_chipmunk.json',
+  //   durationMs: 30000
+  // }
   // Add more tracks easily - just follow the pattern above!
 ];
 

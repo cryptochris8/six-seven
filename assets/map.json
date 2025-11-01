@@ -23,8 +23,8 @@
     },
     {
       "id": 4,
-      "name": "dark-gray-concrete",
-      "textureUri": "blocks/dark-gray-concrete.png",
+      "name": "gray-concrete",
+      "textureUri": "blocks/gray-concrete.png",
       "isCustom": false,
       "isMultiTexture": false
     },

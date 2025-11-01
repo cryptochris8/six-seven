@@ -8,8 +8,8 @@
  */
 
 import { DefaultPlayerEntity, type Player, PlayerUIEvent } from 'hytopia';
-import type { PlayerProfile } from '../gameConfig.js';
-import { DEFAULT_PLAYER_PROFILE } from '../gameConfig.js';
+import type { PlayerProfile, RizzRank } from '../gameConfig.js';
+import { DEFAULT_PLAYER_PROFILE, RIZZ_RANKS } from '../gameConfig.js';
 import { GameManager } from './GameManager.js';
 
 export default class GamePlayerEntity extends DefaultPlayerEntity {
@@ -143,15 +143,59 @@ export default class GamePlayerEntity extends DefaultPlayerEntity {
       this._profile.level++;
       this._profile.xp -= xpNeeded;
 
+      // Update Rizz Rank
+      this._updateRizzRank();
+
       // Send level up notification
       this.player.ui.sendData({
         type: 'level-up',
-        level: this._profile.level
+        level: this._profile.level,
+        rizzRank: this._profile.rizzRank
       });
 
       return true; // Leveled up!
     }
 
     return false; // No level up
+  }
+
+  /**
+   * Calculate total XP (all levels + current XP)
+   */
+  public getTotalXP(): number {
+    // XP from completed levels: sum of (i * 1000) for i from 1 to (level-1)
+    // Formula: 1000 * (level-1) * level / 2
+    const completedLevelsXP = 1000 * (this._profile.level - 1) * this._profile.level / 2;
+
+    // Add current XP in this level
+    return completedLevelsXP + this._profile.xp;
+  }
+
+  /**
+   * Calculate and update Rizz Rank based on total XP
+   */
+  private _updateRizzRank(): void {
+    const totalXP = this.getTotalXP();
+
+    // Find the highest rank the player qualifies for
+    if (totalXP >= RIZZ_RANKS['Meme Lord']) {
+      this._profile.rizzRank = 'Meme Lord';
+    } else if (totalXP >= RIZZ_RANKS['Certified 6-7']) {
+      this._profile.rizzRank = 'Certified 6-7';
+    } else if (totalXP >= RIZZ_RANKS['Gold']) {
+      this._profile.rizzRank = 'Gold';
+    } else if (totalXP >= RIZZ_RANKS['Silver']) {
+      this._profile.rizzRank = 'Silver';
+    } else {
+      this._profile.rizzRank = 'Bronze';
+    }
+  }
+
+  /**
+   * Get current Rizz Rank
+   */
+  public getRizzRank(): RizzRank {
+    this._updateRizzRank(); // Ensure it's up to date
+    return this._profile.rizzRank;
   }
 }

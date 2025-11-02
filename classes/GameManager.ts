@@ -538,7 +538,7 @@ export class GameManager {
     });
 
     // Check if match should end
-    if (this._currentRound >= ROUNDS_PER_MATCH || this._alivePlayers.size <= 1) {
+    if (this._currentRound >= ROUNDS_PER_MATCH) {
       setTimeout(() => this._endMatch(), 3000);
     } else {
       // Start next round after break
@@ -556,12 +556,13 @@ export class GameManager {
 
     console.log('[6-7 BATTLEGROUND] Match ended!');
 
-    // Find the winner (highest score)
+    // Find the winner (highest score among ALIVE players only)
     let winnerPlayerId: string | null = null;
     let highestScore = -1;
 
     this._playerScores.forEach((score, playerId) => {
-      if (score > highestScore) {
+      // Only consider players who are still alive (Survival > Score)
+      if (this._alivePlayers.has(playerId) && score > highestScore) {
         highestScore = score;
         winnerPlayerId = playerId;
       }
@@ -678,10 +679,11 @@ export class GameManager {
       remainingPlayers: this._alivePlayers.size
     });
 
-    // Check if only one player left (instant win)
-    if (this._alivePlayers.size <= 1 && this._gameState === 'PLAYING') {
+    // End round early ONLY if ALL players are eliminated
+    if (this._alivePlayers.size === 0 && this._gameState === 'PLAYING') {
       if (this._roundTimer) clearTimeout(this._roundTimer);
-      this._endMatch();
+      console.log('[6-7 BATTLEGROUND] All players eliminated - ending round early');
+      this._endRound();
     }
   }
 

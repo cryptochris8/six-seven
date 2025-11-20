@@ -1,0 +1,33 @@
+{
+  "id": "six_seven1",
+  "name": "6-7 Meme Voice",
+  "bpm": 120,
+  "beatTimes": [
+    1349,
+    2132,
+    6349,
+    7132,
+    11349,
+    12132,
+    16349,
+    17132,
+    21349,
+    22132,
+    26349,
+    27132
+  ],
+  "markers": [
+    "six",
+    "seven",
+    "six",
+    "seven",
+    "six",
+    "seven",
+    "six",
+    "seven",
+    "six",
+    "seven",
+    "six",
+    "seven"
+  ]
+}

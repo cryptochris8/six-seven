@@ -1,17 +1,25 @@
 {
   "permissions": {
     "allow": [
-      "mcp__hytopia-mcp__listDocumentation",
-      "mcp__hytopia-mcp__listProjects",
-      "mcp__hytopia-mcp__getDocumentation",
-      "mcp__hytopia-mcp__listProjectFiles",
-      "mcp__hytopia-mcp__readProjectFile",
-      "Bash(if exist .hytopia rmdir /s /q .hytopia)",
-      "Bash(if exist index.mjs del index.mjs)",
-      "Bash(powershell -Command:*)",
-      "Bash(git init:*)",
+      "Bash(nul)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(pip install:*)",
+      "Bash(python tools/create_synced_audio.py:*)",
+      "Bash(ffprobe:*)",
+      "Bash(powershell -Command \"Add-Type -AssemblyName ''taglib-sharp''; $media = [TagLib.File]::Create(''C:\\Users\\chris\\Downloads\\ElevenLabs_2025-11-18T21_36_32_Joke Time - Funny Voice & Laughter_pvc_sp100_s90_sb100_se33_b_e2.mp3''); $media.Properties.Duration.TotalSeconds\")",
+      "Bash(powershell -Command \"$shell = New-Object -COMObject Shell.Application; $folder = $shell.NameSpace(''C:\\Users\\chris\\Downloads''); $file = $folder.ParseName(''ElevenLabs_2025-11-18T21_36_32_Joke Time - Funny Voice & Laughter_pvc_sp100_s90_sb100_se33_b_e2.mp3''); $duration = $folder.GetDetailsOf($file, 27); Write-Output $duration\")",
+      "Bash(ffmpeg:*)",
+      "Bash(winget install:*)",
+      "Bash(hytopia start --help:*)",
+      "Bash(npm install)",
+      "mcp__hytopia-mcp__search",
+      "Bash(powershell -ExecutionPolicy Bypass -File ./clear-cache.ps1)",
+      "Bash(git commit:*)",
       "Bash(git add:*)"
-    ]
+    ],
+    "deny": [],
+    "ask": []
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [

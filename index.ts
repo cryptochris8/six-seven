@@ -15,6 +15,7 @@
 import {
   startServer,
   PlayerEvent,
+  ModelRegistry,
 } from 'hytopia';
 
 import { GameManager } from './classes/GameManager.js';
@@ -25,6 +26,10 @@ console.log('='.repeat(60));
 console.log('  6-7 MEME BATTLEGROUND - Starting Server...');
 console.log('='.repeat(60));
 console.log('');
+
+// Disable model optimization for faster development startup
+ModelRegistry.instance.optimize = false;
+ModelRegistry.instance.optimizeEveryStart = false;
 
 /**
  * Start the game server

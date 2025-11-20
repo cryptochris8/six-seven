@@ -70,50 +70,75 @@ export interface AudioTrack {
 }
 
 export const AUDIO_TRACKS: AudioTrack[] = [
+  // =========================================================================
+  // TESTING TRACKS
+  // =========================================================================
+  {
+    id: 'six_seven1',
+    name: '6-7 Meme Voice',
+    uri: 'audio/six_seven1.mp3',
+    beatTimingsUri: 'audio/beat_timings/six_seven1.json',
+    durationMs: 30000
+  },
+  {
+    id: 'six_seven_chipmunk',
+    name: '6-7 Chipmunk',
+    uri: 'audio/six_seven_chipmunk.mp3',
+    beatTimingsUri: 'audio/beat_timings/six_seven_chipmunk.json',
+    durationMs: 30000
+  },
+  // =========================================================================
+  // OTHER TRACKS TEMPORARILY DISABLED
+  // =========================================================================
+  /*
+  {
+    id: 'six_seven_original_synced',
+    name: '6-7 Original (Perfect Sync)',
+    uri: 'audio/six_seven_original_synced.mp3',
+    beatTimingsUri: 'audio/beat_timings/six_seven_original_synced.json',
+    durationMs: 30000
+  },
   {
     id: 'six_seven_original',
     name: '6-7 Original',
     uri: 'audio/six_seven_original.mp3',
     beatTimingsUri: 'audio/beat_timings/six_seven_original.json',
     durationMs: 30000
+  },
+  {
+    id: 'six_seven_hype',
+    name: '6-7 Hype Beast',
+    uri: 'audio/six_seven_hype.mp3',
+    beatTimingsUri: 'audio/beat_timings/six_seven_hype.json',
+    durationMs: 30000
+  },
+  {
+    id: 'six_seven_chill',
+    name: '6-7 Chill Vibes',
+    uri: 'audio/six_seven_chill.mp3',
+    beatTimingsUri: 'audio/beat_timings/six_seven_chill.json',
+    durationMs: 30000
+  },
+  {
+    id: 'six_seven_deep',
+    name: '6-7 Deep Voice',
+    uri: 'audio/six_seven_deep.mp3',
+    beatTimingsUri: 'audio/beat_timings/six_seven_deep.json',
+    durationMs: 30000
+  },
+  {
+    id: 'six_seven_chipmunk',
+    name: '6-7 Chipmunk',
+    uri: 'audio/six_seven_chipmunk.mp3',
+    beatTimingsUri: 'audio/beat_timings/six_seven_chipmunk.json',
+    durationMs: 30000
   }
-  // =========================================================================
-  // V1.1 UPDATE: Additional voices coming soon!
-  // Uncomment these after tuning beat timings per SYNCING_AUDIO_TIMINGS.md
-  // =========================================================================
-  // {
-  //   id: 'six_seven_hype',
-  //   name: '6-7 Hype Beast',
-  //   uri: 'audio/six_seven_hype.mp3',
-  //   beatTimingsUri: 'audio/beat_timings/six_seven_hype.json',
-  //   durationMs: 30000
-  // },
-  // {
-  //   id: 'six_seven_chill',
-  //   name: '6-7 Chill Vibes',
-  //   uri: 'audio/six_seven_chill.mp3',
-  //   beatTimingsUri: 'audio/beat_timings/six_seven_chill.json',
-  //   durationMs: 30000
-  // },
-  // {
-  //   id: 'six_seven_deep',
-  //   name: '6-7 Deep Voice',
-  //   uri: 'audio/six_seven_deep.mp3',
-  //   beatTimingsUri: 'audio/beat_timings/six_seven_deep.json',
-  //   durationMs: 30000
-  // },
-  // {
-  //   id: 'six_seven_chipmunk',
-  //   name: '6-7 Chipmunk',
-  //   uri: 'audio/six_seven_chipmunk.mp3',
-  //   beatTimingsUri: 'audio/beat_timings/six_seven_chipmunk.json',
-  //   durationMs: 30000
-  // }
+  */
   // Add more tracks easily - just follow the pattern above!
 ];
 
 // Default track for fallback
-export const DEFAULT_TRACK_ID = 'six_seven_original';
+export const DEFAULT_TRACK_ID = 'six_seven1';
 
 // Track selection mode
 export type TrackSelectionMode = 'random' | 'sequential' | 'vote';

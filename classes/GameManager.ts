@@ -83,6 +83,10 @@ export class GameManager {
   private _consecutiveAudioErrors = 0;
   private readonly MAX_AUDIO_RETRIES = 3;
 
+  // Track history (prevent immediate repeats)
+  private _trackHistory: string[] = [];
+  private readonly MAX_TRACK_HISTORY = 2; // Don't repeat last 2 tracks
+
   /**
    * Setup the game world
    */
@@ -156,6 +160,9 @@ export class GameManager {
     // Validate the jump with BeatManager
     const result = this._beatManager.validateJump(platform, timestamp);
 
+    // Log input BEFORE processing (helps with debugging race conditions)
+    console.log(`[GAME] ${player.username} jumped to ${platform}: ${result.rating} (+${result.score})${result.eliminate ? ' [WILL ELIMINATE]' : ''}`);
+
     // Update player score
     const currentScore = this._playerScores.get(player.id) || 0;
     this._playerScores.set(player.id, currentScore + result.score);
@@ -188,8 +195,6 @@ export class GameManager {
 
     // Update leaderboard for all players
     this._broadcastLeaderboard();
-
-    console.log(`[GAME] ${player.username} jumped to ${platform}: ${result.rating} (+${result.score})`);
   }
 
   /**
@@ -282,6 +287,8 @@ export class GameManager {
       this._playerGoodHits.set(entity.player.id, 0);
     });
 
+    console.log(`[6-7 BATTLEGROUND] Match initialized with ${this._alivePlayers.size} players`);
+
     // Start first round
     this._startRound();
   }
@@ -343,9 +350,26 @@ export class GameManager {
     }
 
     if (TRACK_SELECTION_MODE === 'random') {
-      // Random selection
-      const randomIndex = Math.floor(Math.random() * AUDIO_TRACKS.length);
-      return AUDIO_TRACKS[randomIndex];
+      // Filter out recently played tracks
+      let availableTracks = AUDIO_TRACKS.filter(track => !this._trackHistory.includes(track.id));
+
+      // If all tracks were recently played, use all tracks (prevents deadlock)
+      if (availableTracks.length === 0) {
+        availableTracks = [...AUDIO_TRACKS];
+        this._trackHistory = []; // Reset history
+      }
+
+      // Random selection from available tracks
+      const randomIndex = Math.floor(Math.random() * availableTracks.length);
+      const selectedTrack = availableTracks[randomIndex];
+
+      // Add to history
+      this._trackHistory.push(selectedTrack.id);
+      if (this._trackHistory.length > this.MAX_TRACK_HISTORY) {
+        this._trackHistory.shift(); // Remove oldest
+      }
+
+      return selectedTrack;
     } else if (TRACK_SELECTION_MODE === 'sequential') {
       // Sequential selection (round-robin)
       const trackIndex = this._currentRound % AUDIO_TRACKS.length;
@@ -670,7 +694,7 @@ export class GameManager {
       });
     }
 
-    console.log(`[6-7 BATTLEGROUND] Player ${player.username} eliminated`);
+    console.log(`[6-7 BATTLEGROUND] Player ${player.username} eliminated (${this._alivePlayers.size} players remaining)`);
 
     // Broadcast elimination to all players
     this._broadcastToAll({

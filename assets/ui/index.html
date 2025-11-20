@@ -27,6 +27,9 @@
     <div class="countdown-number">3</div>
   </div>
 
+  <!-- Track Announcement -->
+  <div class="track-announcement"></div>
+
   <!-- Center: Score Popup -->
   <div class="score-popup"></div>
 
@@ -196,6 +199,10 @@
 
       case 'player-eliminated':
         handlePlayerEliminated(data);
+        break;
+
+      case 'track-selected':
+        handleTrackSelected(data);
         break;
     }
   });
@@ -425,6 +432,21 @@
     `;
     stateText.style.display = 'block';
     stateText.style.color = '#AAAAAA';
+  }
+
+  function handleTrackSelected(data) {
+    const trackName = data.trackName || 'Unknown Track';
+    console.log('[UI] Track selected:', trackName);
+
+    // Show track announcement
+    const announcement = document.querySelector('.track-announcement');
+    if (announcement) {
+      announcement.textContent = trackName;
+      announcement.classList.add('show');
+      setTimeout(() => {
+        announcement.classList.remove('show');
+      }, 3000); // Show for 3 seconds
+    }
   }
 
   function handleError(data) {
@@ -659,6 +681,55 @@
     }
     100% {
       transform: translate(-50%, -60%) scale(0.8);
+      opacity: 0;
+    }
+  }
+
+  /* ===================================================================== */
+  /* TRACK ANNOUNCEMENT */
+  /* ===================================================================== */
+
+  .track-announcement {
+    position: fixed;
+    top: 25%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, rgba(147, 51, 234, 0.95), rgba(79, 70, 229, 0.95));
+    padding: 20px 40px;
+    border-radius: 15px;
+    font-size: 32px;
+    font-weight: 900;
+    color: #FFFFFF;
+    text-align: center;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 998;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+    letter-spacing: 2px;
+  }
+
+  .track-announcement.show {
+    opacity: 1;
+    animation: trackAnnouncementAnim 3s ease-out;
+  }
+
+  @keyframes trackAnnouncementAnim {
+    0% {
+      transform: translateX(-50%) translateY(-30px) scale(0.8);
+      opacity: 0;
+    }
+    15% {
+      transform: translateX(-50%) translateY(0px) scale(1.05);
+      opacity: 1;
+    }
+    85% {
+      transform: translateX(-50%) translateY(0px) scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(-50%) translateY(-20px) scale(0.9);
       opacity: 0;
     }
   }

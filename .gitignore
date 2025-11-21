@@ -40,7 +40,6 @@ yarn-error.log*
 tmp/
 
 # Audio files (users need to add their own)
-assets/audio/*.mp3
 assets/audio/*.ogg
 assets/audio/*.wav
 !assets/audio/*.json

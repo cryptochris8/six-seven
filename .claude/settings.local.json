@@ -16,7 +16,9 @@
       "mcp__hytopia-mcp__search",
       "Bash(powershell -ExecutionPolicy Bypass -File ./clear-cache.ps1)",
       "Bash(git commit:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)"
     ],
     "deny": [],
     "ask": []
